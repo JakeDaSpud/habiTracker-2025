@@ -239,8 +239,10 @@
                     hexString += parseInt(byte, 2).toString(16).padStart(2, "0");
                 }
 
-                // Save the hex string in a single cookie
-                document.cookie = `calendarData=${hexString};path=/`;
+                // Save the hex string in a single cookie, expires in ONE HUNDRED YEAR!!!!
+                const expirationDate = new Date();
+                expirationDate.setFullYear(expirationDate.getFullYear() + 100);
+                document.cookie = `calendarData=${hexString};expires=${expirationDate.toUTCString()};path=/`;
 
                 if (debugFlag) {
                     console.log(`Saved Hexadecimal: ${hexString}`);
@@ -361,7 +363,7 @@
 </head>
 <body>
     <header>
-        <h1>2025 habiTracker</h1>
+        <h1>habiTracker 2025</h1>
     </header>
 
     <hr>
