@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>habiTracker 2025</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            
+            font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+            background-color: bisque;
+            color: gray;
+
+            margin: 0;
+            padding: 0;
+            border: 0;
+        }
+
+        footer {
+            margin-bottom: 25px;
+        }
+
+        hr {
+            background-color: darksalmon;
+            padding: 1px;
+            border: 0;
+            width: 70vw;
+        }
+
+        h1 {
+            color: crimson;
+        }
+
+        h2 {
+            margin-bottom: 0;
+            color: darkslategrey;
+            text-decoration: underline;
+        }
+
+        h3 {
+            color: coral;
+            margin-bottom: 3px;
+        }
+
+        .debug {
+            color: magenta;
+            font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
+            margin: 50px;
+        }
+
+        :checked + label {
+            color: darksalmon;
+            text-decoration: line-through;
+        }
+
+        .calendar-container {
+            width: 80vw;
+        }
+
+        .month {
+            display: flex;
+            align-items: center;
+            flex-direction: column;
+        }
+
+        .monthDays {
+            display: flex;
+            text-align: left;
+            flex-wrap: wrap;
+            flex-direction: row;
+        }
+
+        .day {
+            margin: 20px;
+        }
+
+        .tickGroup {
+            display: flex;
+            flex-direction: column;
+        }
+        
+    </style>
+    <script>
+        const debugFlag = false;
+
+        function generate2025Calendar() {
+            const daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+            const months = [
+                { name: "January", days: 31 },
+                { name: "February", days: 28 }, // 2025 is not a leap year
+                { name: "March", days: 31 },
+                { name: "April", days: 30 },
+                { name: "May", days: 31 },
+                { name: "June", days: 30 },
+                { name: "July", days: 31 },
+                { name: "August", days: 31 },
+                { name: "September", days: 30 },
+                { name: "October", days: 31 },
+                { name: "November", days: 30 },
+                { name: "December", days: 31 },
+            ];
+
+            const startDate = new Date("2025-01-01");
+            let html = "";
+
+            let dayCounter = 0;
+
+            months.forEach((month) => {
+                html += `<div class="month" id="${month.name.toLowerCase()}">\n
+                    <h2>${month.name}</h2>\n
+                    <div class="monthDays">\n`;
+
+                for (let day = 1; day <= month.days; day++) {
+                    const currentDay = new Date(startDate);
+                    currentDay.setDate(startDate.getDate() + dayCounter);
+
+                    const dayName = daysOfWeek[currentDay.getDay()];
+                    const dayId = `${month.name.toLowerCase().slice(0, 3)}${String(day).padStart(2, "0")}${dayName[0].toLowerCase()}`;
+
+                    html += `<div class="day">\n
+                        <h3>${String(day).padStart(2, "0")} ${dayName}</h3>\n
+                        <div class="tickGroup">\n
+                            <div class="tick">\n
+                                <input type="checkbox" id="${dayId}w" name="${dayId}w" value="Workout">\n
+                                <label for="${dayId}w">Workout</label>\n
+                            </div>\n
+                            <div class="tick">\n
+                                <input type="checkbox" id="${dayId}p" name="${dayId}p" value="Productive">\n
+                                <label for="${dayId}p">Productive</label>\n
+                            </div>\n
+                            <div class="tick">\n
+                                <input type="checkbox" id="${dayId}r" name="${dayId}r" value="Read">\n
+                                <label for="${dayId}r">Read</label>\n
+                            </div>\n
+                        </div>\n
+                    </div>\n`;
+                    dayCounter++;
+                }
+
+                html += "</div>\n</div>\n<hr>\n";
+            });
+
+            document.getElementById("calendar-container").innerHTML = html;
+        }
+
+        function saveMonthData(monthId) {
+            const checkboxes = document.querySelectorAll(`#${monthId} input[type='checkbox']`);
+            let binaryString = "";
+    
+            // Build the binary string for this month's data
+            checkboxes.forEach(checkbox => {
+                binaryString += checkbox.checked ? "1" : "0";
+            });
+    
+            // Pad binary string to ensure byte size
+            while (binaryString.length % 8 !== 0) {
+                binaryString += "0";
+            }
+    
+            // Convert binary string to hexadecimal
+            let hexString = "";
+            for (let i = 0; i < binaryString.length; i += 8) {
+                const byte = binaryString.slice(i, i + 8);
+                hexString += parseInt(byte, 2).toString(16).padStart(2, "0");
+            }
+    
+            // Save the hex string in a cookie
+            document.cookie = `${monthId}=${hexString};path=/`;
+    
+            if (debugFlag) {
+                // Print the results to the console for offline testing
+                console.log(`Month: ${monthId}`);
+                console.log(`Binary: ${binaryString}`);
+                console.log(`Hexadecimal: ${hexString}`);
+                console.log('\n');
+            }
+        }
+    
+        function loadMonthData(monthId) {
+            const checkboxes = document.querySelectorAll(`#${monthId} input[type='checkbox']`);
+            const cookieString = document.cookie
+                .split("; ")
+                .find(row => row.startsWith(`${monthId}=`));
+            if (!cookieString) {
+                console.log(`No data found for ${monthId}`);
+                return;
+            }
+    
+            const hexString = cookieString.split("=")[1];
+            let binaryString = "";
+    
+            // Convert hex string back to binary
+            for (let i = 0; i < hexString.length; i += 2) {
+                const byte = parseInt(hexString.slice(i, i + 2), 16).toString(2).padStart(8, "0");
+                binaryString += byte;
+            }
+    
+            // Update checkboxes based on the binary string
+            checkboxes.forEach((checkbox, index) => {
+                checkbox.checked = binaryString[index] === "1";
+            });
+    
+            // Print the decoded binary and its mapping to the console
+            console.log(`Loaded Month: ${monthId}`);
+            console.log(`Hexadecimal: ${hexString}`);
+            console.log(`Binary: ${binaryString}`);
+        }
+    
+        document.addEventListener("DOMContentLoaded", () => {
+            generate2025Calendar();
+            
+            const months = [
+                "january", "february", "march", "april", "may", "june",
+                "july", "august", "september", "october", "november", "december"
+            ];
+
+            function saveAllMonthsData() {
+                let binaryString = "";
+
+                months.forEach((monthId) => {
+                    const checkboxes = document.querySelectorAll(`#${monthId} input[type='checkbox']`);
+                    checkboxes.forEach((checkbox) => {
+                        binaryString += checkbox.checked ? "1" : "0";
+                    });
+                });
+
+                // Pad the binary string to ensure its length is a multiple of 8
+                while (binaryString.length % 8 !== 0) {
+                    binaryString += "0";
+                }
+
+                // Convert binary string to hexadecimal
+                let hexString = "";
+                for (let i = 0; i < binaryString.length; i += 8) {
+                    const byte = binaryString.slice(i, i + 8);
+                    hexString += parseInt(byte, 2).toString(16).padStart(2, "0");
+                }
+
+                // Save the hex string in a single cookie
+                document.cookie = `calendarData=${hexString};path=/`;
+
+                if (debugFlag) {
+                    console.log(`Saved Hexadecimal: ${hexString}`);
+                    console.log(`Binary Length: ${binaryString.length}`);
+                }
+            }
+
+            // Function to load data for all months from the big hex string
+            function loadAllMonthsData() {
+                const cookieString = document.cookie.split("; ").find((row) => row.startsWith("calendarData="));
+                if (!cookieString) {
+                    console.log("No calendar data found.");
+                    return;
+                }
+
+                const hexString = cookieString.split("=")[1];
+                let binaryString = "";
+
+                // Convert hex string back to binary
+                for (let i = 0; i < hexString.length; i += 2) {
+                    const byte = parseInt(hexString.slice(i, i + 2), 16).toString(2).padStart(8, "0");
+                    binaryString += byte;
+                }
+
+                // Distribute the binary string across all checkboxes
+                let index = 0;
+                months.forEach((monthId) => {
+                    const checkboxes = document.querySelectorAll(`#${monthId} input[type='checkbox']`);
+                    checkboxes.forEach((checkbox) => {
+                        checkbox.checked = binaryString[index] === "1";
+                        index++;
+                    });
+                });
+
+                if (debugFlag) {
+                    console.log(`Loaded Hexadecimal: ${hexString}`);
+                    console.log(`Binary Length: ${binaryString.length}`);
+                }
+            }
+
+            function loadAllMonthsDataFromHex(hexString) {
+                let binaryString = "";
+
+                for (let i = 0; i < hexString.length; i += 2) {
+                    const byte = parseInt(hexString.slice(i, i + 2), 16).toString(2).padStart(8, "0");
+                    binaryString += byte;
+                }
+
+                let index = 0;
+                months.forEach((monthId) => {
+                    const checkboxes = document.querySelectorAll(`#${monthId} input[type='checkbox']`);
+                    checkboxes.forEach((checkbox) => {
+                        checkbox.checked = binaryString[index] === "1";
+                        index++;
+                    });
+                });
+
+                if (debugFlag) {
+                    console.log(`Loaded Hexadecimal: ${hexString}`);
+                    console.log(`Binary Length: ${binaryString.length}`);
+                }
+            }
+
+            // Load initial data for all months
+            loadAllMonthsData();
+
+            // Add save functionality for all months' checkboxes
+            months.forEach((monthId) => {
+                const checkboxes = document.querySelectorAll(`#${monthId} input[type='checkbox']`);
+                checkboxes.forEach((checkbox) => {
+                    checkbox.addEventListener("change", saveAllMonthsData);
+                });
+            });
+
+            // Debugging tools
+            if (debugFlag) {
+                const debugContainer = document.createElement("div");
+                debugContainer.classList.add("debug");
+                debugContainer.style.marginTop = "20px";
+
+                const saveButton = document.createElement("button");
+                saveButton.textContent = "Save All Months Data";
+                saveButton.classList.add("debug");
+                saveButton.addEventListener("click", saveAllMonthsData);
+
+                const loadButton = document.createElement("button");
+                loadButton.textContent = "Load All Months Data from Cookie";
+                loadButton.classList.add("debug");
+                loadButton.addEventListener("click", loadAllMonthsData);
+
+                const inputField = document.createElement("input");
+                inputField.classList.add("debug");
+                inputField.type = "text";
+                inputField.placeholder = "Enter hex string to load";
+                inputField.id = "hexInput";
+
+                const inputLoadButton = document.createElement("button");
+                inputLoadButton.classList.add("debug");
+                inputLoadButton.textContent = "Load Data from Input";
+                inputLoadButton.addEventListener("click", () => {
+                    const hexString = document.getElementById("hexInput").value.trim();
+                    if (hexString) {
+                        loadAllMonthsDataFromHex(hexString);
+                    } else {
+                        console.log("Please enter a valid hex string.");
+                    }
+                });
+
+                debugContainer.appendChild(saveButton);
+                debugContainer.appendChild(loadButton);
+                debugContainer.appendChild(inputField);
+                debugContainer.appendChild(inputLoadButton);
+
+                document.body.appendChild(debugContainer);
+            }
+        });
+    </script>
+</head>
+<body>
+    <header>
+        <h1>2025 habiTracker</h1>
+    </header>
+
+    <hr>
+
+    <div id="calendar-container" class="calendar-container">
+
+    </div>
+    
+    <!--<div class="month" id="january">
+        <h2>January</h2>
+        <div class="day">
+            <h3>01 Wednesday</h3>
+            <div class="tickGroup">
+                <div class="tick">
+                    <input type="checkbox" id="jan01w" name="jan01w" value="Workout">
+                    <label for="jan01w">Workout</label>
+                </div>
+                
+                <div class="tick">
+                    <input type="checkbox" id="jan01p" name="jan01p" value="Productive">
+                    <label for="jan01p">Productive</label>
+                </div>
+
+                <div class="tick">
+                    <input type="checkbox" id="jan01r" name="jan01r" value="Read">
+                    <label for="jan01r">Read</label>
+                </div>
+            </div>
+        </div>
+    </div>-->
+
+    <footer>
+        <h3>jake o'reilly | 2025 | <a href="https://github.com/jakedaspud/habiTracker">github repo</a></h3>
+    </footer>
+
+</body>
+</html>
